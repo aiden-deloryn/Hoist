@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/binary"
 	"flag"
+	"fmt"
 	"io"
 	"log"
 	"net"
@@ -33,9 +34,21 @@ func Server(address string) {
 
 func HandleIncoming(conn io.ReadWriteCloser) {
 	defer conn.Close()
+	fmt.Println("Sending file...")
+	SendFileToClient("file.txt", &conn)
+	fmt.Println("File sent.")
+	exit = true
+}
+
+func GetFileFromServer(address string) {
+	conn, err := net.Dial("tcp", address)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer conn.Close()
 
 	var filenameSize int64
-	err := binary.Read(conn, binary.LittleEndian, &filenameSize)
+	err = binary.Read(conn, binary.LittleEndian, &filenameSize)
 	if err != nil {
 		log.Println(err)
 		return
@@ -54,7 +67,7 @@ func HandleIncoming(conn io.ReadWriteCloser) {
 		return
 	}
 
-	file, err := os.Create(string(filename) + ".server")
+	file, err := os.Create(string(filename) + ".copy")
 	if err != nil {
 		log.Println(err)
 		return
@@ -73,58 +86,49 @@ func HandleIncoming(conn io.ReadWriteCloser) {
 	if _, err = io.CopyN(bw, br, fileSize); err != nil {
 		log.Println(err)
 	}
-
-	exit = true
 }
 
-func SendFile(address string, filename string) {
+func SendFileToClient(filename string, conn *io.ReadWriteCloser) {
 	file, err := os.Open(filename)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer file.Close()
 
-	conn, err := net.Dial("tcp", address)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer conn.Close()
-
 	filenameSize := int64(len(filename))
 
-	if err = binary.Write(conn, binary.LittleEndian, filenameSize); err != nil {
+	if err = binary.Write(*conn, binary.LittleEndian, filenameSize); err != nil {
 		log.Println(err)
 		return
 	}
 
-	if _, err = io.WriteString(conn, filename); err != nil {
+	if _, err = io.WriteString(*conn, filename); err != nil {
 		log.Println(err)
 		return
 	}
 
 	stat, _ := file.Stat()
-	if err = binary.Write(conn, binary.LittleEndian, stat.Size()); err != nil {
+	if err = binary.Write(*conn, binary.LittleEndian, stat.Size()); err != nil {
 		log.Println(err)
 		return
 	}
 
 	br := bufio.NewReader(file)
-	bw := bufio.NewWriter(conn)
+	bw := bufio.NewWriter(*conn)
 	defer bw.Flush()
 
 	if _, err = io.CopyN(bw, br, stat.Size()); err != nil {
 		log.Println(err)
 		return
 	}
-
-	log.Println("File sent.")
 }
 
 func main() {
 	flag.Parse()
 	go func() {
 		time.Sleep(time.Second)
-		SendFile(*addr, "file.txt")
+		// SendFile(*addr, "file.txt")
+		GetFileFromServer(*addr)
 	}()
 	Server(*addr)
 }
