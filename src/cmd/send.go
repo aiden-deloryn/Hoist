@@ -26,8 +26,10 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// sendCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	sendCmd.Flags().BoolP("keep-alive", "k", false, "Keep the connection open for multiple transfers")
 }
 
 func runSendCmd(cmd *cobra.Command, args []string) {
-	server.StartServer("localhost:8080", args[0])
+	keepAlive, _ := cmd.Flags().GetBool("keep-alive")
+	server.StartServer("localhost:8080", args[0], keepAlive)
 }

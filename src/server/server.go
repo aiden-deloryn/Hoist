@@ -10,11 +10,7 @@ import (
 	"os"
 )
 
-var (
-	keepAlive = false
-)
-
-func StartServer(address string, filename string) {
+func StartServer(address string, filename string, keepAlive bool) {
 	listner, err := net.Listen("tcp", address)
 
 	if err != nil {
