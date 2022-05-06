@@ -14,7 +14,7 @@ var (
 	keepAlive = false
 )
 
-func StartServer(address string) {
+func StartServer(address string, filename string) {
 	listner, err := net.Listen("tcp", address)
 
 	if err != nil {
@@ -33,19 +33,19 @@ func StartServer(address string) {
 
 		if keepAlive {
 			// Handle multiple connections by starting a new goroutine for each one
-			go HandleIncomingConnection(conn)
+			go HandleIncomingConnection(conn, filename)
 		} else {
 			// Handle the first successful connection and then exit
-			HandleIncomingConnection(conn)
+			HandleIncomingConnection(conn, filename)
 			break
 		}
 	}
 }
 
-func HandleIncomingConnection(conn io.ReadWriteCloser) {
-	defer conn.Close()
+func HandleIncomingConnection(connection io.ReadWriteCloser, filename string) {
+	defer connection.Close()
 	fmt.Println("Sending file...")
-	err := SendFileToClient("file.txt", &conn)
+	err := SendFileToClient(filename, &connection)
 
 	if err != nil {
 		fmt.Fprintln(os.Stderr, fmt.Sprintf("An error occurred when sending file: %s", err))
