@@ -8,6 +8,8 @@ import (
 	"io"
 	"net"
 	"os"
+
+	"github.com/aiden-deloryn/hoist/src/util"
 )
 
 func GetFileFromServer(address string) error {
@@ -57,11 +59,28 @@ func GetFileFromServer(address string) error {
 	}
 
 	reader := bufio.NewReader(connection)
+
+	// Convert our bufio.Reader into a util.ProgressReader so we can log the
+	// progress of a copy to the console.
+	progressReader := &util.ProgressReader{
+		Reader: *reader,
+		ProgressCallback: func(bytesCopied int64) {
+			copyComplete := bytesCopied == fileSize
+			progress := int(float64(bytesCopied) / float64(fileSize) * 100)
+
+			fmt.Printf("\rCopying %d%%: Read %d bytes of %d", progress, bytesCopied, fileSize)
+
+			if copyComplete {
+				fmt.Print("\n")
+			}
+		},
+	}
+
 	writer := bufio.NewWriter(file)
 	defer writer.Flush()
 
 	// Receive the file from the server
-	_, err = io.CopyN(writer, reader, fileSize)
+	_, err = io.CopyN(writer, progressReader, fileSize)
 
 	if err != nil {
 		return errors.New(fmt.Sprintf("Failed to receive file from the server: %s", err))
