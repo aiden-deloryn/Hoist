@@ -33,6 +33,6 @@ func init() {
 
 func runGetCmd(cmd *cobra.Command, args []string) {
 	if err := client.GetFileFromServer(args[0]); err != nil {
-		fmt.Fprintf(os.Stderr, err.Error())
+		fmt.Fprintf(os.Stderr, "%s\n", err.Error())
 	}
 }
