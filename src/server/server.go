@@ -38,9 +38,9 @@ func StartServer(address string, filename string, keepAlive bool) {
 	}
 }
 
-func HandleIncomingConnection(connection io.ReadWriteCloser, filename string) {
+func HandleIncomingConnection(connection net.Conn, filename string) {
 	defer connection.Close()
-	fmt.Println("Sending file...")
+	fmt.Printf("Sending file to %s...\n", connection.RemoteAddr())
 	err := SendFileToClient(filename, &connection)
 
 	if err != nil {
@@ -48,10 +48,10 @@ func HandleIncomingConnection(connection io.ReadWriteCloser, filename string) {
 		return
 	}
 
-	fmt.Println("File sent.")
+	fmt.Printf("File sent to %s\n", connection.RemoteAddr())
 }
 
-func SendFileToClient(filename string, conn *io.ReadWriteCloser) error {
+func SendFileToClient(filename string, conn *net.Conn) error {
 	file, err := os.Open(filename)
 
 	if err != nil {

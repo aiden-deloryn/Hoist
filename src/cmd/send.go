@@ -1,7 +1,11 @@
 package cmd
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/aiden-deloryn/hoist/src/server"
+	"github.com/aiden-deloryn/hoist/src/util"
 	"github.com/spf13/cobra"
 )
 
@@ -31,5 +35,11 @@ func init() {
 
 func runSendCmd(cmd *cobra.Command, args []string) {
 	keepAlive, _ := cmd.Flags().GetBool("keep-alive")
-	server.StartServer("localhost:8080", args[0], keepAlive)
+	ip, err := util.GetLocalIPAddress()
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to get local IP address: %s\n", err.Error())
+	}
+
+	server.StartServer(fmt.Sprintf("%s:8080", ip), args[0], keepAlive)
 }
