@@ -8,6 +8,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"time"
 
 	"github.com/aiden-deloryn/hoist/src/util"
 )
@@ -60,6 +61,11 @@ func GetFileFromServer(address string) error {
 
 	reader := bufio.NewReader(connection)
 
+	// Init vars to measure copy speed
+	copySpeed := int64(0)
+	sampleStartTime := time.Now().UnixMilli() - 1
+	sampleStartBytes := int64(0)
+
 	// Convert our bufio.Reader into a util.ProgressReader so we can log the
 	// progress of a copy to the console.
 	progressReader := &util.ProgressReader{
@@ -68,7 +74,18 @@ func GetFileFromServer(address string) error {
 			copyComplete := bytesCopied == fileSize
 			progress := int(float64(bytesCopied) / float64(fileSize) * 100)
 
-			fmt.Printf("\rCopying %d%%: Read %d bytes of %d", progress, bytesCopied, fileSize)
+			sampleDuration := time.Now().UnixMilli() - sampleStartTime
+			sampleBytesCopied := bytesCopied - sampleStartBytes
+
+			// Calculate the current copy speed
+			if sampleDuration >= 1000 {
+				// Calculate speed in MiB per second
+				copySpeed = (sampleBytesCopied / 1048576) / (sampleDuration / 1000)
+				sampleStartTime = time.Now().UnixMilli()
+				sampleStartBytes = bytesCopied
+			}
+
+			fmt.Printf("\rCopying file %s %d/%d bytes (%d MiB/s)", util.GenerateProgressBarString(progress), bytesCopied, fileSize, copySpeed)
 
 			if copyComplete {
 				fmt.Print("\n")
