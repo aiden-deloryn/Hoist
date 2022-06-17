@@ -8,6 +8,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"path/filepath"
 )
 
 func StartServer(address string, filename string, keepAlive bool) {
@@ -60,7 +61,9 @@ func SendFileToClient(filename string, conn *net.Conn) error {
 
 	defer file.Close()
 
-	filenameSize := int64(len(filename))
+	destFilename := filepath.Base(filename)
+
+	filenameSize := int64(len(destFilename))
 
 	// Send the size of the filename to the client
 	err = binary.Write(*conn, binary.LittleEndian, filenameSize)
@@ -70,7 +73,7 @@ func SendFileToClient(filename string, conn *net.Conn) error {
 	}
 
 	// Send the filename to the client
-	_, err = io.WriteString(*conn, filename)
+	_, err = io.WriteString(*conn, destFilename)
 
 	if err != nil {
 		return errors.New(fmt.Sprintf("Failed to send filename to the client: %s", err))

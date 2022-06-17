@@ -46,7 +46,7 @@ func GetFileFromServer(address string) error {
 		return errors.New(fmt.Sprintf("Failed to read file size from the server: %s", err))
 	}
 
-	file, err := os.Create(string(filename) + ".copy")
+	file, err := os.Create(string(filename))
 
 	if err != nil {
 		return errors.New(fmt.Sprintf("Failed to create file: %s", err))
