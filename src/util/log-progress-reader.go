@@ -1,11 +1,9 @@
 package util
 
-import (
-	"bufio"
-)
+import "io"
 
 type ProgressReader struct {
-	bufio.Reader
+	io.Reader
 	bytesCopied      int64
 	ProgressCallback func(bytesCopied int64)
 }

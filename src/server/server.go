@@ -9,6 +9,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 func StartServer(address string, filename string, keepAlive bool) {
@@ -41,18 +42,18 @@ func StartServer(address string, filename string, keepAlive bool) {
 
 func HandleIncomingConnection(connection net.Conn, filename string) {
 	defer connection.Close()
-	fmt.Printf("Sending file to %s...\n", connection.RemoteAddr())
-	err := SendFileToClient(filename, &connection)
+	fmt.Printf("Sending file(s) to %s...\n", connection.RemoteAddr())
+	err := SendObjectToClient(filename, connection)
 
 	if err != nil {
 		fmt.Fprintln(os.Stderr, fmt.Sprintf("An error occurred when sending file: %s", err))
 		return
 	}
 
-	fmt.Printf("File sent to %s\n", connection.RemoteAddr())
+	fmt.Printf("File(s) sent to %s\n", connection.RemoteAddr())
 }
 
-func SendFileToClient(filename string, conn *net.Conn) error {
+func SendObjectToClient(filename string, conn net.Conn) error {
 	file, err := os.Open(filename)
 
 	if err != nil {
@@ -61,19 +62,65 @@ func SendFileToClient(filename string, conn *net.Conn) error {
 
 	defer file.Close()
 
-	destFilename := filepath.Base(filename)
+	fileInfo, err := file.Stat()
+
+	if fileInfo.IsDir() {
+		// Send directory
+		err = filepath.Walk(filename, func(path string, info os.FileInfo, err error) error {
+			if info.IsDir() {
+				return nil
+			}
+
+			destFilename := strings.TrimPrefix(path, filepath.Dir(filename)+string(filepath.Separator))
+
+			err = SendFileToClient(path, destFilename, conn)
+
+			if err != nil {
+				return errors.New(fmt.Sprintf("Failed to send file to client '%s': %s", path, err))
+			}
+
+			return nil
+		})
+	} else {
+		// Send file
+		destFilename := filepath.Base(filename)
+		err = SendFileToClient(filename, destFilename, conn)
+	}
+
+	if err != nil {
+		return err
+	}
+
+	// Notify the client there is nothing left to copy by sending a file size of -1
+	err = binary.Write(conn, binary.LittleEndian, int64(-1))
+
+	if err != nil {
+		return errors.New(fmt.Sprintf("Failed to send 'copy complete' message to client: %s", err))
+	}
+
+	return nil
+}
+
+func SendFileToClient(srcFilename string, destFilename string, conn net.Conn) error {
+	file, err := os.Open(srcFilename)
+
+	if err != nil {
+		return errors.New(fmt.Sprintf("Failed to read file: %s", err))
+	}
+
+	defer file.Close()
 
 	filenameSize := int64(len(destFilename))
 
 	// Send the size of the filename to the client
-	err = binary.Write(*conn, binary.LittleEndian, filenameSize)
+	err = binary.Write(conn, binary.LittleEndian, filenameSize)
 
 	if err != nil {
 		return errors.New(fmt.Sprintf("Failed to send filename size to the client: %s", err))
 	}
 
 	// Send the filename to the client
-	_, err = io.WriteString(*conn, destFilename)
+	_, err = io.WriteString(conn, destFilename)
 
 	if err != nil {
 		return errors.New(fmt.Sprintf("Failed to send filename to the client: %s", err))
@@ -86,18 +133,16 @@ func SendFileToClient(filename string, conn *net.Conn) error {
 	}
 
 	// Send the size of the file to the client
-	err = binary.Write(*conn, binary.LittleEndian, fileInfo.Size())
+	err = binary.Write(conn, binary.LittleEndian, fileInfo.Size())
 
 	if err != nil {
 		return errors.New(fmt.Sprintf("Failed to send file size to the client: %s", err))
 	}
 
 	reader := bufio.NewReader(file)
-	writer := bufio.NewWriter(*conn)
-	defer writer.Flush()
 
 	// Send the file to the client
-	_, err = io.CopyN(writer, reader, fileInfo.Size())
+	_, err = io.CopyN(conn, reader, fileInfo.Size())
 
 	if err != nil {
 		return errors.New(fmt.Sprintf("Failed to send file to the client: %s", err))
