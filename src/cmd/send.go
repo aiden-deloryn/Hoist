@@ -3,6 +3,8 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/aiden-deloryn/hoist/src/server"
 	"github.com/aiden-deloryn/hoist/src/util"
@@ -41,5 +43,7 @@ func runSendCmd(cmd *cobra.Command, args []string) {
 		fmt.Fprintf(os.Stderr, "Failed to get local IP address: %s\n", err.Error())
 	}
 
-	server.StartServer(fmt.Sprintf("%s:8080", ip), args[0], keepAlive)
+	filename := filepath.FromSlash(strings.TrimSuffix(args[0], string(filepath.Separator)))
+
+	server.StartServer(fmt.Sprintf("%s:8080", ip), filename, keepAlive)
 }
