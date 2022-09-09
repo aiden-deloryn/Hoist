@@ -30,14 +30,22 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// getCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	getCmd.Flags().Bool("no-password", false, "Do not prompt for a password (password will be blank)")
+	getCmd.Flags().StringP("password", "p", "", "Provide the password to use for authentication")
 }
 
 func runGetCmd(cmd *cobra.Command, args []string) error {
-	fmt.Print("Enter password: ")
-	password, err := terminal.ReadPassword(int(syscall.Stdin))
+	skipPassword, _ := cmd.Flags().GetBool("no-password")
+	password, _ := cmd.Flags().GetString("password")
 
-	if err != nil {
-		return fmt.Errorf("failed to read password: %s", err)
+	if !skipPassword && password == "" {
+		fmt.Print("Enter password: ")
+		passwordBytes, err := terminal.ReadPassword(int(syscall.Stdin))
+		password = string(passwordBytes)
+
+		if err != nil {
+			return fmt.Errorf("failed to read password: %s", err)
+		}
 	}
 
 	if err := client.GetFileFromServer(args[0], string(password)); err != nil {
