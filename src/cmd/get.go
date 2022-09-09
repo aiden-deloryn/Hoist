@@ -2,10 +2,11 @@ package cmd
 
 import (
 	"fmt"
-	"os"
+	"syscall"
 
 	"github.com/aiden-deloryn/hoist/src/client"
 	"github.com/spf13/cobra"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 // getCmd represents the get command
@@ -13,7 +14,7 @@ var getCmd = &cobra.Command{
 	Use:   "get [address]",
 	Short: "Download a file being shared from another computer on a local area network",
 	Long:  `Download a file being shared from another computer on a local area network.`,
-	Run:   runGetCmd,
+	RunE:  runGetCmd,
 	Args:  cobra.ExactArgs(1),
 }
 
@@ -31,8 +32,17 @@ func init() {
 	// getCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
-func runGetCmd(cmd *cobra.Command, args []string) {
-	if err := client.GetFileFromServer(args[0]); err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", err.Error())
+func runGetCmd(cmd *cobra.Command, args []string) error {
+	fmt.Print("Enter password: ")
+	password, err := terminal.ReadPassword(int(syscall.Stdin))
+
+	if err != nil {
+		return fmt.Errorf("failed to read password: %s", err)
 	}
+
+	if err := client.GetFileFromServer(args[0], string(password)); err != nil {
+		return err
+	}
+
+	return nil
 }

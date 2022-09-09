@@ -2,6 +2,7 @@ package client
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -13,9 +14,10 @@ import (
 	"time"
 
 	"github.com/aiden-deloryn/hoist/src/util"
+	"github.com/aiden-deloryn/hoist/src/values"
 )
 
-func GetFileFromServer(address string) error {
+func GetFileFromServer(address string, password string) error {
 	conn, err := net.Dial("tcp", address)
 
 	if err != nil {
@@ -23,6 +25,12 @@ func GetFileFromServer(address string) error {
 	}
 
 	defer conn.Close()
+
+	err = authenticate(conn, password)
+
+	if err != nil {
+		return fmt.Errorf("Authentication failed: %s", err)
+	}
 
 	for {
 		// Receive the filename size from the server
@@ -116,6 +124,35 @@ func GetFileFromServer(address string) error {
 		}
 
 		file.Close()
+	}
+
+	return nil
+}
+
+func authenticate(conn net.Conn, password string) error {
+	// Pad the password with '0' so that it's length is MAX_PASSWORD_LENGTH
+	for len(password) < values.MAX_PASSWORD_LENGTH {
+		password += "0"
+	}
+
+	// Send the password to the server
+	_, err := io.CopyN(conn, bytes.NewBuffer([]byte(password)), int64(len(password)))
+
+	if err != nil {
+		return fmt.Errorf("Failed to send data to server: %s", err)
+	}
+
+	// Read the result from the server (result is boolean 0 or 1)
+	result := bytes.NewBuffer([]byte{})
+	_, err = io.CopyN(result, conn, 1)
+
+	if err != nil {
+		return fmt.Errorf("Failed to get response from server: %s", err)
+	}
+
+	// If the result was 0 (false) we can assume the password was incorrect
+	if result.Bytes()[0] == 0 {
+		return fmt.Errorf("Password is incorrect")
 	}
 
 	return nil

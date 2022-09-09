@@ -2,6 +2,7 @@ package server
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -10,14 +11,15 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/aiden-deloryn/hoist/src/values"
 )
 
-func StartServer(address string, filename string, keepAlive bool) {
+func StartServer(address string, filename string, password string, keepAlive bool) error {
 	listner, err := net.Listen("tcp", address)
 
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return
+		return fmt.Errorf("failed to start TCP server: %s", err)
 	}
 
 	fmt.Printf("The target file or directory is ready to send. To download it on another machine, use:\n")
@@ -34,29 +36,69 @@ func StartServer(address string, filename string, keepAlive bool) {
 
 		if keepAlive {
 			// Handle multiple connections by starting a new goroutine for each one
-			go HandleIncomingConnection(conn, filename)
+			go handleIncomingConnection(conn, filename, password)
 		} else {
 			// Handle the first successful connection and then exit
-			HandleIncomingConnection(conn, filename)
+			handleIncomingConnection(conn, filename, password)
 			break
 		}
 	}
+
+	return nil
 }
 
-func HandleIncomingConnection(connection net.Conn, filename string) {
-	defer connection.Close()
-	fmt.Printf("Sending file(s) to %s...\n", connection.RemoteAddr())
-	err := SendObjectToClient(filename, connection)
+func handleIncomingConnection(conn net.Conn, filename string, password string) error {
+	defer conn.Close()
+
+	err := verifyPassword(conn, password)
 
 	if err != nil {
-		fmt.Fprintln(os.Stderr, fmt.Sprintf("An error occurred when sending file: %s", err))
-		return
+		return fmt.Errorf("Failed to verify password: %s", err)
 	}
 
-	fmt.Printf("File(s) sent to %s\n", connection.RemoteAddr())
+	fmt.Printf("Sending file(s) to %s...\n", conn.RemoteAddr())
+	err = sendObjectToClient(filename, conn)
+
+	if err != nil {
+		return fmt.Errorf("An error occurred when sending file: %s", err)
+	}
+
+	fmt.Printf("File(s) sent to %s\n", conn.RemoteAddr())
+
+	return nil
 }
 
-func SendObjectToClient(filename string, conn net.Conn) error {
+func verifyPassword(conn net.Conn, password string) error {
+	// Pad the password with '0' so that it's length is MAX_PASSWORD_LENGTH
+	for len(password) < values.MAX_PASSWORD_LENGTH {
+		password += "0"
+	}
+
+	// Get the password from the client
+	guess := bytes.NewBuffer([]byte{})
+	_, err := io.CopyN(guess, conn, int64(len(password)))
+
+	if err != nil {
+		return errors.New(fmt.Sprintf("Failed to read password from the client: %s", err))
+	}
+
+	if string(string(guess.Bytes())) != password {
+		// Notify the client that password verification failed
+		io.CopyN(conn, bytes.NewBuffer([]byte{0}), 1)
+		return fmt.Errorf("Password is incorrect")
+	}
+
+	// Notify the client that password verification succeeded
+	_, err = io.CopyN(conn, bytes.NewBuffer([]byte{1}), 1)
+
+	if err != nil {
+		return fmt.Errorf("Failed to notify client of password verification result: %s", err)
+	}
+
+	return nil
+}
+
+func sendObjectToClient(filename string, conn net.Conn) error {
 	file, err := os.Open(filename)
 
 	if err != nil {
@@ -76,7 +118,7 @@ func SendObjectToClient(filename string, conn net.Conn) error {
 
 			destFilename := strings.TrimPrefix(path, filepath.Dir(filename)+string(filepath.Separator))
 
-			err = SendFileToClient(path, destFilename, conn)
+			err = sendFileToClient(path, destFilename, conn)
 
 			if err != nil {
 				return errors.New(fmt.Sprintf("Failed to send file to client '%s': %s", path, err))
@@ -87,7 +129,7 @@ func SendObjectToClient(filename string, conn net.Conn) error {
 	} else {
 		// Send file
 		destFilename := filepath.Base(filename)
-		err = SendFileToClient(filename, destFilename, conn)
+		err = sendFileToClient(filename, destFilename, conn)
 	}
 
 	if err != nil {
@@ -104,7 +146,7 @@ func SendObjectToClient(filename string, conn net.Conn) error {
 	return nil
 }
 
-func SendFileToClient(srcFilename string, destFilename string, conn net.Conn) error {
+func sendFileToClient(srcFilename string, destFilename string, conn net.Conn) error {
 	file, err := os.Open(srcFilename)
 
 	if err != nil {
