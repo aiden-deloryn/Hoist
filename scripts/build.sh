@@ -24,9 +24,11 @@ fi
 # Create the required directory structure to create the debian package
 mkdir -p ./debpkgs/hoist_${VERSION}_amd64/DEBIAN
 mkdir -p ./debpkgs/hoist_${VERSION}_amd64/usr/bin
+mkdir -p ./bin
 
 # Build the binary from source
 CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ./debpkgs/hoist_${VERSION}_amd64/usr/bin/hoist ./src/main.go
+CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o ./bin/hoist_${VERSION}_amd64.exe ./src/main.go
 
 # Generate a metadata file for the debian package
 cat >./debpkgs/hoist_${VERSION}_amd64/DEBIAN/control <<EOL

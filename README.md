@@ -10,6 +10,11 @@ wget https://github.com/aiden-deloryn/Hoist/releases/download/v1.0.0/hoist_1.0.0
 && sudo apt install -y ./hoist_1.0.0_amd64.deb
 ```
 
+### Windows (PowerShell)
+```
+Invoke-WebRequest https://github.com/aiden-deloryn/Hoist/releases/download/v1.0.0/hoist_1.0.0_amd64.exe -OutFile hoist.exe
+```
+
 ### Build form source (Linux)
 ```
 git clone https://github.com/aiden-deloryn/Hoist.git
