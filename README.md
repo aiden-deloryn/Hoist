@@ -4,7 +4,16 @@ Hoist is a simple tool for transferring large files or directories over a Local 
 
 ## Installation
 
+### Debian / Ubuntu 
+```
+wget https://github.com/aiden-deloryn/Hoist/releases/download/v1.0.0/hoist_1.0.0_amd64.deb \
+&& sudo apt install -y ./hoist_1.0.0_amd64.deb
+```
+
 ### Build form source (Linux)
 ```
-git clone https://github.com/aiden-deloryn/Hoist.git /tmp/Hoist && (cd /tmp/Hoist && go build -o ./hoist ./src/main.go) && sudo mv /tmp/Hoist/hoist /usr/local/bin && rm -rf /tmp/Hoist
+git clone https://github.com/aiden-deloryn/Hoist.git
+cd Hoist/
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ./hoist ./src/main.go
+sudo mv ./hoist /usr/local/bin/
 ```
