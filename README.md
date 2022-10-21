@@ -6,13 +6,13 @@ Hoist is a simple tool for transferring large files or directories over a Local 
 
 ### Debian / Ubuntu 
 ```
-wget https://github.com/aiden-deloryn/Hoist/releases/download/v1.0.0/hoist_1.0.0_amd64.deb \
-&& sudo apt install -y ./hoist_1.0.0_amd64.deb
+wget https://github.com/aiden-deloryn/Hoist/releases/download/v1.0.1/hoist_1.0.1_amd64.deb \
+&& sudo apt install -y ./hoist_1.0.1_amd64.deb
 ```
 
 ### Windows (PowerShell)
 ```
-Invoke-WebRequest https://github.com/aiden-deloryn/Hoist/releases/download/v1.0.0/hoist_1.0.0_amd64.exe -OutFile hoist.exe
+Invoke-WebRequest https://github.com/aiden-deloryn/Hoist/releases/download/v1.0.1/hoist_1.0.1_amd64.exe -OutFile hoist.exe
 ```
 
 ### Build form source (Linux)
@@ -28,7 +28,7 @@ sudo mv ./hoist /usr/local/bin/
 Send a directory using hoist:
 
 ```
-$ hoist send "Project Resources"
+$ hoist send "./Pictures/Funny Cat Photos"
 Enter a password: 
 The target file or directory is ready to send. To download it on another machine, use:
   hoist get 127.0.0.1:8080
@@ -39,10 +39,18 @@ Download the directory using hoist:
 ```
 $ hoist get 127.0.0.1:8080
 Enter password: 
-Copying file Project Resources/README.md...
-|========100%========| 769/769 bytes (0 MiB/s)
-Copying file Project Resources/Summary.pdf...
-|========100%========| 738240/738240 bytes (0 MiB/s)
-Copying file Project Resources/logo.png...
-|========100%========| 230700/230700 bytes (0 MiB/s)
+Copying file Funny Cat Photos/Cat's wearing hats/Cats-Wearing-Hats-social.jpg...
+|========100%========| 270249/270249 bytes (0 MiB/s)
+Copying file Funny Cat Photos/Cat's wearing hats/cat-wearing-hat-12408151.jpg...
+|========100%========| 112350/112350 bytes (0 MiB/s)
+Copying file Funny Cat Photos/Cat's wearing hats/cat_wearing_hat_with_ears.jpg...
+|========100%========| 32741/32741 bytes (0 MiB/s)
+Copying file Funny Cat Photos/cat_looking_shocked.jpeg...
+|========100%========| 5871/5871 bytes (0 MiB/s)
+Copying file Funny Cat Photos/cat_on_skateboard.jpeg...
+|========100%========| 6020/6020 bytes (0 MiB/s)
+Copying file Funny Cat Photos/cat_wearing_glasses.jpeg...
+|========100%========| 8364/8364 bytes (0 MiB/s)
+Copying file Funny Cat Photos/grumpy-cat-meme-of-not-enjoying-a-morning-at-all.jpeg...
+|========100%========| 102247/102247 bytes (0 MiB/s)
 ```
