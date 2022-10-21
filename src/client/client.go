@@ -46,17 +46,20 @@ func GetFileFromServer(address string, password string) error {
 			break
 		}
 
-		// Receive the filename from the server
-		filename := make([]byte, int(filenameSize))
-		_, err = io.ReadFull(conn, filename)
+		// Receive the filenameBytes from the server
+		filenameBytes := make([]byte, int(filenameSize))
+		_, err = io.ReadFull(conn, filenameBytes)
 
 		if err != nil {
 			return errors.New(fmt.Sprintf("Failed to read filename from the server: %s", err))
 		}
 
+		// Convert filename's path separator for the current platform
+		filename := filepath.FromSlash(string(filenameBytes))
+
 		// Create parent directories
-		if strings.Count(string(filename), string(filepath.Separator)) != 0 {
-			os.MkdirAll(filepath.Dir(string(filename)), 0775)
+		if strings.Count(filename, string(filepath.Separator)) != 0 {
+			os.MkdirAll(filepath.Dir(filename), 0775)
 		}
 
 		// Receive the file size from the server
@@ -67,7 +70,7 @@ func GetFileFromServer(address string, password string) error {
 			return errors.New(fmt.Sprintf("Failed to read file size from the server: %s", err))
 		}
 
-		file, err := os.Create(string(filename))
+		file, err := os.Create(filename)
 
 		if err != nil {
 			return errors.New(fmt.Sprintf("Failed to create file: %s", err))

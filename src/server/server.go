@@ -116,7 +116,8 @@ func sendObjectToClient(filename string, conn net.Conn) error {
 				return nil
 			}
 
-			destFilename := strings.TrimPrefix(path, filepath.Dir(filename)+string(filepath.Separator))
+			destFilename := strings.TrimPrefix(path, filepath.Dir(filename))
+			destFilename = strings.TrimPrefix(destFilename, string(filepath.Separator))
 
 			err = sendFileToClient(path, destFilename, conn)
 
@@ -154,6 +155,10 @@ func sendFileToClient(srcFilename string, destFilename string, conn net.Conn) er
 	}
 
 	defer file.Close()
+
+	// Always send paths using the '/' separator over the network. These paths
+	// will be converted to platform specific paths by the client
+	destFilename = strings.ReplaceAll(destFilename, string(filepath.Separator), "/")
 
 	filenameSize := int64(len(destFilename))
 
