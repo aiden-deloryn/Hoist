@@ -55,11 +55,13 @@ func runSendCmd(cmd *cobra.Command, args []string) error {
 	if !skipPassword && password == "" {
 		fmt.Print("Enter a password: ")
 		passwordBytes, err := terminal.ReadPassword(int(syscall.Stdin))
-		password = string(passwordBytes)
+		fmt.Println()
 
 		if err != nil {
 			return fmt.Errorf("failed to set password: %s", err)
 		}
+
+		password = string(passwordBytes)
 	}
 
 	if len(password) > values.MAX_PASSWORD_LENGTH {

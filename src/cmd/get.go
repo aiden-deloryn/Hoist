@@ -41,11 +41,13 @@ func runGetCmd(cmd *cobra.Command, args []string) error {
 	if !skipPassword && password == "" {
 		fmt.Print("Enter password: ")
 		passwordBytes, err := terminal.ReadPassword(int(syscall.Stdin))
-		password = string(passwordBytes)
+		fmt.Println()
 
 		if err != nil {
 			return fmt.Errorf("failed to read password: %s", err)
 		}
+
+		password = string(passwordBytes)
 	}
 
 	if err := client.GetFileFromServer(args[0], string(password)); err != nil {
