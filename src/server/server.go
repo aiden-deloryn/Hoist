@@ -15,7 +15,7 @@ import (
 	"github.com/aiden-deloryn/hoist/src/values"
 )
 
-func StartServer(address string, filename string, password string, keepAlive bool) error {
+func StartServer(address string, filename string, password string, keepAlive bool, followSymlinks bool) error {
 	listner, err := net.Listen("tcp", address)
 
 	if err != nil {
@@ -36,10 +36,10 @@ func StartServer(address string, filename string, password string, keepAlive boo
 
 		if keepAlive {
 			// Handle multiple connections by starting a new goroutine for each one
-			go handleIncomingConnection(conn, filename, password)
+			go handleIncomingConnection(conn, filename, password, followSymlinks)
 		} else {
 			// Handle the first successful connection and then exit
-			handleIncomingConnection(conn, filename, password)
+			handleIncomingConnection(conn, filename, password, followSymlinks)
 			break
 		}
 	}
@@ -47,7 +47,7 @@ func StartServer(address string, filename string, password string, keepAlive boo
 	return nil
 }
 
-func handleIncomingConnection(conn net.Conn, filename string, password string) error {
+func handleIncomingConnection(conn net.Conn, filename string, password string, followSymlinks bool) error {
 	defer conn.Close()
 
 	err := verifyPassword(conn, password)
@@ -57,7 +57,7 @@ func handleIncomingConnection(conn net.Conn, filename string, password string) e
 	}
 
 	fmt.Printf("Sending file(s) to %s...\n", conn.RemoteAddr())
-	err = sendObjectToClient(filename, conn)
+	err = sendObjectToClient(filename, conn, followSymlinks)
 
 	if err != nil {
 		return fmt.Errorf("An error occurred when sending file: %s", err)
@@ -98,7 +98,11 @@ func verifyPassword(conn net.Conn, password string) error {
 	return nil
 }
 
-func sendObjectToClient(filename string, conn net.Conn) error {
+func sendObjectToClient(filename string, conn net.Conn, followSymlinks bool) error {
+	return sendObjectToClientWithDest(filename, conn, "", true, followSymlinks)
+}
+
+func sendObjectToClientWithDest(filename string, conn net.Conn, destFilename string, terminateConnectionOnCompletion bool, followSymlinks bool) error {
 	file, err := os.Open(filename)
 
 	if err != nil {
@@ -116,10 +120,36 @@ func sendObjectToClient(filename string, conn net.Conn) error {
 				return nil
 			}
 
-			destFilename := strings.TrimPrefix(path, filepath.Dir(filename))
-			destFilename = strings.TrimPrefix(destFilename, string(filepath.Separator))
+			// We must not modify destFilename inside this loop,
+			// so copy it's value into a new variable
+			outputFilename := destFilename
 
-			err = sendFileToClient(path, destFilename, conn)
+			// In no output filename was set, use the source filename
+			if outputFilename == "" {
+				outputFilename = strings.TrimPrefix(path, filepath.Dir(filename))
+				outputFilename = strings.TrimPrefix(outputFilename, string(filepath.Separator))
+			} else {
+				outputFilename = filepath.Clean(outputFilename + string(filepath.Separator) + strings.TrimPrefix(path, filename))
+			}
+
+			// Check if the FSO is a symlink and handle it appropriately
+			if info.Mode()&os.ModeSymlink != 0 {
+				if !followSymlinks {
+					return nil
+				}
+
+				linkTarget, err := os.Readlink(path)
+
+				if err != nil {
+					return fmt.Errorf("Failed to resolve symlink: '%s'", path)
+				}
+
+				err = sendObjectToClientWithDest(linkTarget, conn, outputFilename, false, followSymlinks)
+
+				return err
+			}
+
+			err = sendFileToClient(path, outputFilename, conn)
 
 			if err != nil {
 				return errors.New(fmt.Sprintf("Failed to send file to client '%s': %s", path, err))
@@ -129,7 +159,9 @@ func sendObjectToClient(filename string, conn net.Conn) error {
 		})
 	} else {
 		// Send file
-		destFilename := filepath.Base(filename)
+		if destFilename == "" {
+			destFilename = filepath.Base(filename)
+		}
 		err = sendFileToClient(filename, destFilename, conn)
 	}
 
@@ -137,11 +169,15 @@ func sendObjectToClient(filename string, conn net.Conn) error {
 		return err
 	}
 
-	// Notify the client there is nothing left to copy by sending a file size of -1
-	err = binary.Write(conn, binary.LittleEndian, int64(-1))
+	// We should only terminate the connection with the client if the current
+	// function call was not recursive
+	if terminateConnectionOnCompletion {
+		// Notify the client there is nothing left to copy by sending a file size of -1
+		err = binary.Write(conn, binary.LittleEndian, int64(-1))
 
-	if err != nil {
-		return errors.New(fmt.Sprintf("Failed to send 'copy complete' message to client: %s", err))
+		if err != nil {
+			return errors.New(fmt.Sprintf("Failed to send 'copy complete' message to client: %s", err))
+		}
 	}
 
 	return nil
