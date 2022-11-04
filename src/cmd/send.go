@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"os/user"
 	"path/filepath"
 	"strings"
 	"syscall"
@@ -53,6 +54,17 @@ func runSendCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	filename := filepath.FromSlash(strings.TrimSuffix(args[0], string(filepath.Separator)))
+
+	// Bash doesn't expand "~" if the path is in single or double quotes
+	if strings.HasPrefix(filename, "~") {
+		user, err := user.Current()
+
+		if err != nil {
+			return fmt.Errorf("failed to expand home directory (~): %s", err)
+		}
+
+		filename = filepath.Join(user.HomeDir, filename[1:])
+	}
 
 	if !skipPassword && password == "" {
 		fmt.Print("Enter a password: ")

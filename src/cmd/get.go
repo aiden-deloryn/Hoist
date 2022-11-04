@@ -2,6 +2,9 @@ package cmd
 
 import (
 	"fmt"
+	"os/user"
+	"path/filepath"
+	"strings"
 	"syscall"
 
 	"github.com/aiden-deloryn/hoist/src/client"
@@ -39,6 +42,17 @@ func runGetCmd(cmd *cobra.Command, args []string) error {
 	skipPassword, _ := cmd.Flags().GetBool("no-password")
 	password, _ := cmd.Flags().GetString("password")
 	outputDirectory, _ := cmd.Flags().GetString("output")
+
+	// Bash doesn't expand "~" if the path is in single or double quotes
+	if strings.HasPrefix(outputDirectory, "~") {
+		user, err := user.Current()
+
+		if err != nil {
+			return fmt.Errorf("failed to expand home directory (~): %s", err)
+		}
+
+		outputDirectory = filepath.Join(user.HomeDir, outputDirectory[1:])
+	}
 
 	if !skipPassword && password == "" {
 		fmt.Print("Enter password: ")
