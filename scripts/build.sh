@@ -21,6 +21,11 @@ if ! grep -q $VERSION "./src/values/values.go"; then
     exit 1
 fi
 
+if ! grep -q $VERSION "./README.md"; then
+    >&2 echo "Error: Please update README.md for version '${VERSION}'"
+    exit 1
+fi
+
 # Create the required directory structure to create the debian package
 mkdir -p ./debpkgs/hoist_${VERSION}_amd64/DEBIAN
 mkdir -p ./debpkgs/hoist_${VERSION}_amd64/usr/bin
