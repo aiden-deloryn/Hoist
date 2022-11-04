@@ -32,11 +32,13 @@ func init() {
 	// getCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	getCmd.Flags().Bool("no-password", false, "Do not prompt for a password (password will be blank)")
 	getCmd.Flags().StringP("password", "p", "", "Provide the password to use for authentication")
+	getCmd.Flags().StringP("output", "o", "", "Set a custom output directory")
 }
 
 func runGetCmd(cmd *cobra.Command, args []string) error {
 	skipPassword, _ := cmd.Flags().GetBool("no-password")
 	password, _ := cmd.Flags().GetString("password")
+	outputDirectory, _ := cmd.Flags().GetString("output")
 
 	if !skipPassword && password == "" {
 		fmt.Print("Enter password: ")
@@ -50,7 +52,7 @@ func runGetCmd(cmd *cobra.Command, args []string) error {
 		password = string(passwordBytes)
 	}
 
-	if err := client.GetFileFromServer(args[0], string(password)); err != nil {
+	if err := client.GetFileFromServer(args[0], string(password), outputDirectory); err != nil {
 		return err
 	}
 

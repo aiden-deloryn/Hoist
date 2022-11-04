@@ -17,7 +17,7 @@ import (
 	"github.com/aiden-deloryn/hoist/src/values"
 )
 
-func GetFileFromServer(address string, password string) error {
+func GetFileFromServer(address string, password string, outputDirectory string) error {
 	conn, err := net.Dial("tcp", address)
 
 	if err != nil {
@@ -56,6 +56,10 @@ func GetFileFromServer(address string, password string) error {
 
 		// Convert filename's path separator for the current platform
 		filename := filepath.FromSlash(string(filenameBytes))
+
+		if outputDirectory != "" {
+			filename = filepath.Clean(outputDirectory + string(filepath.Separator) + filename)
+		}
 
 		// Create parent directories
 		if strings.Count(filename, string(filepath.Separator)) != 0 {
