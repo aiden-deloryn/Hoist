@@ -144,6 +144,11 @@ func sendObjectToClientWithDest(filename string, conn net.Conn, destFilename str
 					return fmt.Errorf("Failed to resolve symlink: '%s'", path)
 				}
 
+				// If the symlink points to a relative path we must convert it to an absolute path
+				if !filepath.IsAbs(linkTarget) {
+					linkTarget = filepath.Clean(filepath.Join(filepath.Dir(path), linkTarget))
+				}
+
 				err = sendObjectToClientWithDest(linkTarget, conn, outputFilename, false, followSymlinks)
 
 				return err
