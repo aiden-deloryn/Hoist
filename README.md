@@ -31,13 +31,13 @@ Send a directory using hoist:
 $ hoist send "./Pictures/Funny Cat Photos"
 Enter a password: 
 The target file or directory is ready to send. To download it on another machine, use:
-  hoist get 127.0.0.1:8080
+  hoist get 127.0.0.1:47478
 ```
 
 Download the directory using hoist:
 
 ```
-$ hoist get 127.0.0.1:8080
+$ hoist get 127.0.0.1:47478
 Enter password: 
 Copying file Funny Cat Photos/Cat's wearing hats/Cats-Wearing-Hats-social.jpg...
 |========100%========| 270249/270249 bytes (0 MiB/s)

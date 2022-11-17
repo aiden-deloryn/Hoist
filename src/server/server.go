@@ -23,7 +23,7 @@ func StartServer(address string, filename string, password string, keepAlive boo
 	}
 
 	fmt.Printf("The target file or directory is ready to send. To download it on another machine, use:\n")
-	fmt.Printf("  hoist get %s\n", address)
+	fmt.Printf("  hoist get %s\n", listner.Addr())
 
 	for {
 		conn, err := listner.Accept()

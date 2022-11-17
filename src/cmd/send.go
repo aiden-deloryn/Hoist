@@ -38,8 +38,9 @@ func init() {
 	// sendCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	sendCmd.Flags().BoolP("keep-alive", "k", false, "Keep the connection open for multiple transfers")
 	sendCmd.Flags().Bool("no-password", false, "Do not prompt for a password (password will be blank)")
-	sendCmd.Flags().StringP("password", "p", "", "Set the password for incoming connections")
+	sendCmd.Flags().String("password", "", "Set the password for incoming connections")
 	sendCmd.Flags().BoolP("follow-symlinks", "l", false, "Follow symbolic links instead of skipping them")
+	sendCmd.Flags().StringP("port", "p", "0", "The port number to use for serving files")
 }
 
 func runSendCmd(cmd *cobra.Command, args []string) error {
@@ -47,6 +48,7 @@ func runSendCmd(cmd *cobra.Command, args []string) error {
 	skipPassword, _ := cmd.Flags().GetBool("no-password")
 	password, _ := cmd.Flags().GetString("password")
 	followSymlinks, _ := cmd.Flags().GetBool("follow-symlinks")
+	port, _ := cmd.Flags().GetString("port")
 	ip, err := util.GetLocalIPAddress()
 
 	if err != nil {
@@ -82,7 +84,7 @@ func runSendCmd(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("Password length must be %d characters or less", values.MAX_PASSWORD_LENGTH)
 	}
 
-	err = server.StartServer(fmt.Sprintf("%s:8080", ip), filename, string(password), keepAlive, followSymlinks)
+	err = server.StartServer(fmt.Sprintf("%s:%s", ip, port), filename, string(password), keepAlive, followSymlinks)
 
 	if err != nil {
 		return fmt.Errorf("server error: %s", err)
