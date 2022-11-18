@@ -12,7 +12,8 @@ wget https://github.com/aiden-deloryn/Hoist/releases/download/v1.1.0/hoist_1.1.0
 
 ### Windows (PowerShell)
 ```
-Invoke-WebRequest https://github.com/aiden-deloryn/Hoist/releases/download/v1.1.0/hoist_1.1.0_amd64.exe -OutFile hoist.exe
+Invoke-WebRequest https://raw.githubusercontent.com/aiden-deloryn/Hoist/v1.1.0/scripts/install.ps1 -OutFile install.ps1
+Set-ExecutionPolicy Bypass -Scope Process -Force; .\install.ps1 -version "1.1.0"
 ```
 
 ### Build form source (Linux)
