@@ -6,14 +6,14 @@ Hoist is a simple tool for transferring large files or directories over a Local 
 
 ### Debian / Ubuntu 
 ```
-wget https://github.com/aiden-deloryn/Hoist/releases/download/v1.1.0/hoist_1.1.0_amd64.deb \
-&& sudo apt install -y ./hoist_1.1.0_amd64.deb
+wget https://github.com/aiden-deloryn/Hoist/releases/download/v1.2.0/hoist_1.2.0_amd64.deb \
+&& sudo apt install -y ./hoist_1.2.0_amd64.deb
 ```
 
 ### Windows (PowerShell)
 ```
-Invoke-WebRequest https://raw.githubusercontent.com/aiden-deloryn/Hoist/v1.1.0/scripts/install.ps1 -OutFile install.ps1
-Set-ExecutionPolicy Bypass -Scope Process -Force; .\install.ps1 -version "1.1.0"
+Invoke-WebRequest https://raw.githubusercontent.com/aiden-deloryn/Hoist/v1.2.0/scripts/install.ps1 -OutFile install.ps1
+Set-ExecutionPolicy Bypass -Scope Process -Force; .\install.ps1 -version "1.2.0"
 ```
 
 ### Build form source (Linux)
