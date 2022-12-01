@@ -26,14 +26,22 @@ if ! grep -q $VERSION "./README.md"; then
     exit 1
 fi
 
-# Create the required directory structure to create the debian package
+# Create the required directory structure to create the debian packages
 mkdir -p ./debpkgs/hoist_${VERSION}_amd64/DEBIAN
 mkdir -p ./debpkgs/hoist_${VERSION}_amd64/usr/bin
+
+mkdir -p ./debpkgs/hoist_${VERSION}_arm64/DEBIAN
+mkdir -p ./debpkgs/hoist_${VERSION}_arm64/usr/bin
+
+# Create a bin folder for Windows executables
 mkdir -p ./bin
+
 
 # Build the binary from source
 CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ./debpkgs/hoist_${VERSION}_amd64/usr/bin/hoist ./src/main.go
+CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o ./debpkgs/hoist_${VERSION}_arm64/usr/bin/hoist ./src/main.go
 CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o ./bin/hoist_${VERSION}_amd64.exe ./src/main.go
+CGO_ENABLED=0 GOOS=windows GOARCH=arm64 go build -o ./bin/hoist_${VERSION}_arm64.exe ./src/main.go
 
 # Generate a metadata file for the debian package
 cat >./debpkgs/hoist_${VERSION}_amd64/DEBIAN/control <<EOL
@@ -47,8 +55,20 @@ Maintainer: Aiden De Loryn
 Description: Hoist is a simple tool for transferring large files or directories over a Local Area Network (LAN).
 EOL
 
+cat >./debpkgs/hoist_${VERSION}_arm64/DEBIAN/control <<EOL
+Package: hoist
+Version: ${VERSION}
+Architecture: arm64
+Essential: no
+Priority: optional
+Depends:
+Maintainer: Aiden De Loryn
+Description: Hoist is a simple tool for transferring large files or directories over a Local Area Network (LAN).
+EOL
+
 # Build the debian package
 dpkg-deb --build ./debpkgs/hoist_${VERSION}_amd64
+dpkg-deb --build ./debpkgs/hoist_${VERSION}_arm64
 
 # Tag the release using git
 git tag -a v${VERSION} -m "Release version ${VERSION}"

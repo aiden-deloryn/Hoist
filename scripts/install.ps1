@@ -1,6 +1,7 @@
 #Requires -RunAsAdministrator
 
 Param([Parameter(Mandatory=$true)][string]$version)
+Param([Parameter(Mandatory=$true)][string]$arch)
 $ErrorActionPreference = "Stop"
 
 $appName = "Hoist"
@@ -15,7 +16,7 @@ Write-Output "Creating application directory..."
 New-Item -Path $env:ProgramFiles -Name $appName -ItemType "directory" -Force
 
 Write-Output "Downloading application executable..."
-Invoke-WebRequest "https://github.com/aiden-deloryn/Hoist/releases/download/v${version}/hoist_${version}_amd64.exe" -OutFile "${appPath}\${exeName}"
+Invoke-WebRequest "https://github.com/aiden-deloryn/Hoist/releases/download/v${version}/hoist_${version}_${arch}.exe" -OutFile "${appPath}\${exeName}"
 
 If (-not ($splitPath -contains $appPath)) {
     Write-Output "Adding application directory to PATH..."
