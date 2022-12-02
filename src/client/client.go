@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -13,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aiden-deloryn/hoist/src/types"
 	"github.com/aiden-deloryn/hoist/src/util"
 	"github.com/aiden-deloryn/hoist/src/values"
 )
@@ -44,6 +46,17 @@ func GetFileFromServer(address string, password string, outputDirectory string) 
 		// If the filenameSize is -1, there is nothing left to copy
 		if filenameSize == -1 {
 			break
+		}
+
+		// If the filenameSize is -2, the next object is a symlink
+		if filenameSize == -2 {
+			err = GetSymlinkFromServer(conn, outputDirectory)
+
+			if err != nil {
+				return fmt.Errorf("failed to get symlink from server: %s", err)
+			}
+
+			continue
 		}
 
 		// Receive the filenameBytes from the server
@@ -131,6 +144,53 @@ func GetFileFromServer(address string, password string, outputDirectory string) 
 		}
 
 		file.Close()
+	}
+
+	return nil
+}
+
+func GetSymlinkFromServer(conn net.Conn, outputDirectory string) error {
+	// Receive the symlink metadata size from the server
+	var metadataSize int64
+	err := binary.Read(conn, binary.LittleEndian, &metadataSize)
+
+	if err != nil {
+		return fmt.Errorf("failed to read symlink metadata size from the server: %s", err)
+	}
+
+	// Receive the symlink metadata from the server
+	symlinkMetadataJSON := make([]byte, int(metadataSize))
+	_, err = io.ReadFull(conn, symlinkMetadataJSON)
+
+	if err != nil {
+		return fmt.Errorf("failed to read symlink metadata from the server: %s", err)
+	}
+
+	metadata := types.SymlinkMetadata{}
+
+	err = json.Unmarshal(symlinkMetadataJSON, &metadata)
+
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal symlink metadata: %s", err)
+	}
+
+	// Convert filename's path separator for the current platform
+	metadata.Target = filepath.FromSlash(metadata.Target)
+	metadata.Name = filepath.FromSlash(metadata.Name)
+
+	if outputDirectory != "" {
+		metadata.Name = filepath.Clean(outputDirectory + string(filepath.Separator) + metadata.Name)
+	}
+
+	os.MkdirAll(filepath.Dir(metadata.Name), 0775)
+
+	fmt.Printf("Creating symlink: \n")
+	fmt.Printf("  %s --> %s\n", metadata.Name, metadata.Target)
+
+	err = os.Symlink(metadata.Target, metadata.Name)
+
+	if err != nil {
+		return fmt.Errorf("failed to create symlink: %s", err)
 	}
 
 	return nil

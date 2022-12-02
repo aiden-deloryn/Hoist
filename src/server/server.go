@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -12,6 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/aiden-deloryn/hoist/src/types"
 	"github.com/aiden-deloryn/hoist/src/values"
 )
 
@@ -135,6 +137,12 @@ func sendObjectToClientWithDest(filename string, conn net.Conn, destFilename str
 			// Check if the FSO is a symlink and handle it appropriately
 			if info.Mode()&os.ModeSymlink != 0 {
 				if !followSymlinks {
+					err = sendSymlinkToClient(path, outputFilename, conn)
+
+					if err != nil {
+						return errors.New(fmt.Sprintf("Failed to send file to client '%s': %s", path, err))
+					}
+
 					return nil
 				}
 
@@ -237,6 +245,54 @@ func sendFileToClient(srcFilename string, destFilename string, conn net.Conn) er
 
 	if err != nil {
 		return errors.New(fmt.Sprintf("Failed to send file to the client: %s", err))
+	}
+
+	return nil
+}
+
+func sendSymlinkToClient(srcFilename string, destFilename string, conn net.Conn) error {
+	// Always send paths using the '/' separator over the network. These paths
+	// will be converted to platform specific paths by the client
+	destFilename = strings.ReplaceAll(destFilename, string(filepath.Separator), "/")
+
+	linkTarget, err := os.Readlink(srcFilename)
+
+	if err != nil {
+		return fmt.Errorf("failed to resolve symlink: '%s'", srcFilename)
+	}
+
+	metadata := types.SymlinkMetadata{
+		Name:   destFilename,
+		Target: linkTarget,
+	}
+
+	metadataJSON, err := json.Marshal(metadata)
+
+	if err != nil {
+		return fmt.Errorf("failed to marshal symlink metadata: %s", err)
+	}
+
+	// Notify the client that we are going to send symlink metadata
+	err = binary.Write(conn, binary.LittleEndian, int64(-2))
+
+	if err != nil {
+		return fmt.Errorf("failed to send 'symlink' message to client: %s", err)
+	}
+
+	// Send the size of the symlink metadata
+	metadataSize := int64(len(metadataJSON))
+
+	err = binary.Write(conn, binary.LittleEndian, metadataSize)
+
+	if err != nil {
+		return fmt.Errorf("failed to send metadata size to the client: %s", err)
+	}
+
+	// Send the symlink metadata
+	_, err = io.WriteString(conn, string(metadataJSON))
+
+	if err != nil {
+		return fmt.Errorf("failed to send symlink metadata to the client: %s", err)
 	}
 
 	return nil
