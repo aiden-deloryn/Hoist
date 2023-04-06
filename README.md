@@ -12,7 +12,7 @@ VERSION='1.3.0' ARCH='amd64' sh -c 'wget https://github.com/aiden-deloryn/Hoist/
 
 ### Windows (PowerShell)
 ```
-Invoke-WebRequest https://raw.githubusercontent.com/aiden-deloryn/Hoist/v1.3.0/scripts/install.ps1 -OutFile install.ps1
+Invoke-WebRequest https://raw.githubusercontent.com/aiden-deloryn/Hoist/a9b1c56d3cd30384e22e520c6de5dc9814a83674/scripts/install.ps1 -OutFile install.ps1
 Set-ExecutionPolicy Bypass -Scope Process -Force; .\install.ps1 -version "1.3.0" -arch "amd64"
 ```
 
