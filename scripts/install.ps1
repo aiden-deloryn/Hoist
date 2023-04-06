@@ -1,7 +1,6 @@
 #Requires -RunAsAdministrator
 
-Param([Parameter(Mandatory=$true)][string]$version)
-Param([Parameter(Mandatory=$true)][string]$arch)
+Param([Parameter(Mandatory=$true)][string]$version, [Parameter(Mandatory=$true)][string]$arch)
 $ErrorActionPreference = "Stop"
 
 $appName = "Hoist"
